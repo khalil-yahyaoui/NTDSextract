@@ -1,15 +1,15 @@
 from dissect.esedb import EseDB
-import os,csv,sys, shutil
+import os,csv,sys, shutil,numpy,pandas 
 
 from extractFields import extractFields
 
 csv.field_size_limit(sys.maxsize)
 
-def saveToCSV(userinfo,type,ntds_file):
-    headers = ['samaccountname'] + list(next(iter(userinfo.values())).keys())
+def saveToCSV(infos,type,ntds_file):
+    headers = ['samaccountname'] + list(next(iter(infos.values())).keys())
 
     rows = []
-    for samaccountname, attributes in userinfo.items():
+    for samaccountname, attributes in infos.items():
         row = [samaccountname] + [attributes.get(header, '') for header in headers[1:]]
         rows.append(row)
         
@@ -42,14 +42,15 @@ def parseRecord(record):
                         attributes[field] = attribute
                 else : 
                     attributes[field] = ""
-            except Exception as e:
+            except :
                 attributes[field] = ""
     return samAccountName,attributes
 
-
 def ParseNTDSFile(ntds_file,fields,datatable):    
 
-    users = groups = machineAccounts = {}
+    users = {}
+    groups = {}
+    machineAccounts = {}
     print("[+] Info Extraction Started")
     for record in datatable.records():
         ObjectType = record.get(fields["sAMAccountType"])
@@ -60,7 +61,7 @@ def ParseNTDSFile(ntds_file,fields,datatable):
             samaccountname , machineaccount = parseRecord(record)
             machineAccounts[samaccountname] = machineaccount
         elif ObjectType == 0x10000000:
-            samaccountname,group = parseRecord(record)
+            samaccountname , group = parseRecord(record)
             groups[samaccountname] = group
     
     print("[+] Info Extraction Finished")
@@ -97,7 +98,7 @@ if os.path.isdir(directory):
         shutil.copyfile(ntds_file, directory + "/" + ntds_file)
     os.chdir(directory)
 else:
-    os.mkdir(directory)
+    os.makedirs(directory)
     shutil.copyfile(ntds_file, directory + "/" + ntds_file)
     os.chdir(directory)
 
