@@ -1,5 +1,6 @@
 from dissect.esedb import EseDB
 import os,csv,sys, shutil
+
 from extractFields import extractFields
 
 csv.field_size_limit(sys.maxsize)
@@ -83,7 +84,8 @@ def readInfosFromCSV(csv_file_path):
 
 ntds_file = sys.argv[1]
 out_dir = sys.argv[2]
-directory = out_dir + "/" + ntds_file.split('.')[0]
+directory = out_dir + "/" + ntds_file.split(".")[0]
+ntds_file.split('.')[0]
 
 fh =  open(ntds_file,"rb")
 db = EseDB(fh)
@@ -95,7 +97,7 @@ if os.path.isdir(directory):
         shutil.copyfile(ntds_file, directory + "/" + ntds_file)
     os.chdir(directory)
 else:
-    os.makedirs(directory)
+    os.mkdir(directory)
     shutil.copyfile(ntds_file, directory + "/" + ntds_file)
     os.chdir(directory)
 
