@@ -152,9 +152,3 @@ def dumpHashes():
             hashfile.write(domain + samaccountname + ":" + rid + ":" + LMHash.hex()+":" + NTHash.hex())
     hashfile.close()
         
-
-fh = open("societe.dit","rb")
-db = EseDB(fh)
-datatable = db.table('datatable')
-fields = extractFields("societe.dit")
-dumpHashes()
