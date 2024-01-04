@@ -1,0 +1,3 @@
+*.dit
+__pycache__
+test/

@@ -47,12 +47,10 @@ def parseRecord(record):
     return samAccountName,attributes
 
 
-def extractRecordInfos(ntds_file,fields,datatable):    
+def ParseNTDSFile(ntds_file,fields,datatable):    
 
-    users = {}
-    groups = {}
-    machineAccounts = {}
-    
+    users = groups = machineAccounts = {}
+    print("[+] Info Extraction Started")
     for record in datatable.records():
         ObjectType = record.get(fields["sAMAccountType"])
         if ObjectType == 0x30000000:
@@ -65,13 +63,12 @@ def extractRecordInfos(ntds_file,fields,datatable):
             samaccountname,group = parseRecord(record)
             groups[samaccountname] = group
     
+    print("[+] Info Extraction Finished")
+
     saveToCSV(users,"user",ntds_file)
     saveToCSV(machineAccounts,"machineaccount",ntds_file)
     saveToCSV(groups,"group",ntds_file)
 
-    print("[+] Info Extraction Finished")
-
-    return [users , machineAccounts,groups]
 
 def readInfosFromCSV(csv_file_path):
     users = {}
@@ -83,32 +80,7 @@ def readInfosFromCSV(csv_file_path):
             users[sam_account_name] = attributes
     return users
 
-def kerberoastableUsers(users): 
-    kerberoastableusers = []
-    for user in users.keys():
-        spn = users[user]["servicePrincipalName"]
-        if spn != "":
-            kerberoastableusers.append(user)
-    return kerberoastableusers
 
-def ParseNTDSFile(ntds_file,fields,datatable):
-
-    
-    print("[-] Info Extraction started")
-
-    csv_file_path = 'users_' + ntds_file.split('.')[0] + '.csv'
-    csv_file_path_ = 'machineccounts_' + ntds_file.split('.')[0] + '.csv'
-    csv_file_path__ = 'groups_' + ntds_file.split('.')[0] + '.csv'
-    users = machineAccounts = groups = {}
-    if os.path.isfile(csv_file_path) :
-        users = readInfosFromCSV(csv_file_path)
-    if os.path.isfile(csv_file_path_) : 
-        machineAccounts = readInfosFromCSV(csv_file_path_)
-    if os.path.isfile(csv_file_path__) : 
-        groups = readInfosFromCSV(csv_file_path__)
-    if not (len(users) or len(machineAccounts) or len(groups)):
-        users,machineAccounts,groups = extractRecordInfos(ntds_file,fields,datatable)
-    return users,machineAccounts , groups
 
 ntds_file = sys.argv[1]
 directory = ntds_file.split('.')[0]
@@ -128,5 +100,4 @@ else:
     os.chdir(directory)
 
 fields = extractFields(ntds_file)
-
-users,machineaccounts , groups = ParseNTDSFile(ntds_file,fields,datatable)
+ParseNTDSFile(ntds_file,fields,datatable)
