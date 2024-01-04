@@ -36,8 +36,7 @@ def parseRecord(record):
                 attribute = record.get(fields[field])
                 if attribute is not None :
                     if isinstance(attribute,list):
-                        if not isinstance(attribute[0],bytes):
-                            attribute = ",".join(str(i) for i in attribute)
+                        attribute = ",".join(str(i) for i in attribute)
                     if isinstance(attribute,str) or isinstance(attribute,int):
                         attributes[field] = attribute
                 else : 
@@ -46,12 +45,24 @@ def parseRecord(record):
                 attributes[field] = ""
     return samAccountName,attributes
 
+
+def cleanUpInfos(infos,fields):
+    for field in fields.keys():
+        try:
+            if all(infos[user][field] == "" for user in infos.keys()):
+                for user in infos.keys():
+                    del infos[user][field]
+        except:
+            continue
+
+
 def ParseNTDSFile(ntds_file,fields,datatable):    
 
     users = {}
     groups = {}
     machineAccounts = {}
     print("[+] Info Extraction Started")
+    
     for record in datatable.records():
         ObjectType = record.get(fields["sAMAccountType"])
         if ObjectType == 0x30000000:
@@ -65,6 +76,14 @@ def ParseNTDSFile(ntds_file,fields,datatable):
             groups[samaccountname] = group
     
     print("[+] Info Extraction Finished")
+
+    print("[+] Cleanup Started")
+    
+    cleanUpInfos(users,fields)
+    cleanUpInfos(groups,fields)
+    cleanUpInfos(machineAccounts,fields)
+    
+    print("[+] Cleanup Finished")
 
     saveToCSV(users,"user",ntds_file)
     saveToCSV(machineAccounts,"machineaccount",ntds_file)
