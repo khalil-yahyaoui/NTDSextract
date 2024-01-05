@@ -1,11 +1,9 @@
 from impacket.examples.secretsdump import LocalOperations
 from impacket.structure import Structure
 from impacket.crypto import transformKey
-from dissect.esedb import EseDB
 
-from Cryptodome.Cipher import DES, ARC4, AES
-from six import b, PY2
-from extractFields import extractFields
+from Cryptodome.Cipher import DES, ARC4
+from six import PY2
 
 from struct import unpack, pack
 import hashlib

@@ -1,7 +1,5 @@
 from dissect.esedb import EseDB
-import os,csv,sys, shutil
-
-from extractFields import extractFields
+import csv,sys
 
 csv.field_size_limit(sys.maxsize)
 
