@@ -93,7 +93,7 @@ def removeDESLayer(hash,rid,commonCrypto):
 
 
 
-def extractPEKKey():
+def extractPEKKey(datatable,fields):
     for record in datatable.records():
         PekKey_ = record.get(fields["pekList"])
         if PekKey_ is not None:
@@ -120,11 +120,11 @@ def decryptPEKKey(PekKey_,bootkey):
 
     return PEKLIST
 
-def dumpHashes():
+def dumpHashes(datatable,fields,systemFile):
 
     hashfile = open("hashes.txt","w")
-    PEKkeyenc = extractPEKKey()
-    bootkey = extractBootKey("SYSTEM")
+    PEKkeyenc = extractPEKKey(datatable,fields)
+    bootkey = extractBootKey(systemFile)
     PEKLIST = decryptPEKKey(PEKkeyenc,bootkey)
     commonCrypto = CryptoCommon()
 

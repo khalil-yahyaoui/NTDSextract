@@ -1,5 +1,5 @@
 from dissect.esedb import EseDB
-import os,csv,sys, shutil,numpy,pandas 
+import os,csv,sys, shutil
 
 from extractFields import extractFields
 
@@ -27,7 +27,7 @@ def saveToCSV(infos,type,ntds_file):
     
     print("[+] Writing in CSV Done")
 
-def parseRecord(record):
+def parseRecord(record,fields):
     samAccountName = record.get(fields["sAMAccountName"])
     attributes = {}
     if samAccountName is not None :
@@ -64,15 +64,15 @@ def ParseNTDSFile(ntds_file,fields,datatable):
     print("[+] Info Extraction Started")
     
     for record in datatable.records():
-        ObjectType = record.get(fields["sAMAccountType"])
+        ObjectType = record.get(fields["sAMAccountType"])    
         if ObjectType == 0x30000000:
-            samaccountname , user = parseRecord(record)
+            samaccountname , user = parseRecord(record,fields)
             users[samaccountname] = user
         elif ObjectType == 0x30000001:
-            samaccountname , machineaccount = parseRecord(record)
+            samaccountname , machineaccount = parseRecord(record,fields)
             machineAccounts[samaccountname] = machineaccount
         elif ObjectType == 0x10000000:
-            samaccountname , group = parseRecord(record)
+            samaccountname , group = parseRecord(record,fields)
             groups[samaccountname] = group
     
     print("[+] Info Extraction Finished")
@@ -99,27 +99,3 @@ def readInfosFromCSV(csv_file_path):
             attributes = {header: row.get(header, '') for header in csv_reader.fieldnames[1:]}
             users[sam_account_name] = attributes
     return users
-
-
-
-ntds_file = sys.argv[1]
-out_dir = sys.argv[2]
-directory = out_dir + "/" + ntds_file.split(".")[0]
-ntds_file.split('.')[0]
-
-fh =  open(ntds_file,"rb")
-db = EseDB(fh)
-datatable = db.table('datatable')
-
-
-if os.path.isdir(directory):
-    if not os.path.isfile(directory + "/" + ntds_file):
-        shutil.copyfile(ntds_file, directory + "/" + ntds_file)
-    os.chdir(directory)
-else:
-    os.makedirs(directory)
-    shutil.copyfile(ntds_file, directory + "/" + ntds_file)
-    os.chdir(directory)
-
-fields = extractFields(ntds_file)
-ParseNTDSFile(ntds_file,fields,datatable)
