@@ -1,7 +1,24 @@
-from dissect.esedb import EseDB
 import csv,sys
+from base64 import b64decode as decode
+from datetime import datetime
 
 csv.field_size_limit(sys.maxsize)
+
+FILETIME_FIELDS = [
+    "badPasswordTime",
+    "lastLogon",
+    "lastLogoff",
+    "lastLogonTimestamp",
+    "pwdLastSet",
+    "accountExpires",
+    "lockoutTime",
+    "priorSetTime",
+    "lastSetTime",
+    "msKds-CreateTime",
+    "msKds-UseStartTime",
+]
+
+DATETIME_FIELDS = ["dSCorePropagationData", "whenChanged", "whenCreated"]
 
 USER_ACCOUNT_CONTROL = {
     "SCRIPT": 0x0001,
@@ -29,8 +46,10 @@ USER_ACCOUNT_CONTROL = {
 }
 
 
+objectClassSchema = {"ldap": dict(), "cn": dict(), "resolve": dict()}
+
 def saveToCSV(infos,type,ntds_file):
-    headers = ['samaccountname'] + list(next(iter(infos.values())).keys())
+    headers = ['sAMAccountName'] + list(next(iter(infos.values())).keys())
 
     rows = []
     for samaccountname, attributes in infos.items():
@@ -51,7 +70,20 @@ def saveToCSV(infos,type,ntds_file):
     
     print("[+] Writing in CSV Done")
 
+def formatTime(attribute):
+    if isinstance(attribute,int):
+        attribute = int(str(attribute).replace("'",""))
+        attribute = int((attribute / 10**7 ) - 11644473600)
+        attribute =  datetime.fromtimestamp(attribute).__str__()
+    elif isinstance(attribute,list):
+        attribute = [int(str(i).replace("'","")) for i in attribute]
+        attribute = [int((i / 10**7 ) - 11644473600) for i in attribute]
+        attribute =  [datetime.fromtimestamp(i).__str__() for i in attribute ]
+    return attribute
+
+
 def parseRecord(record,fields):
+    
     samAccountName = record.get(fields["sAMAccountName"])
     attributes = {}
     if samAccountName is not None :
@@ -59,6 +91,8 @@ def parseRecord(record,fields):
             try : 
                 attribute = record.get(fields[field])
                 if attribute is not None :
+                    if field in (FILETIME_FIELDS + DATETIME_FIELDS):
+                        attribute = formatTime(attribute)
                     if isinstance(attribute,list):
                         attribute = ",".join(str(i) for i in attribute)
                     if field == "userAccountControl":
@@ -66,13 +100,17 @@ def parseRecord(record,fields):
                         for key,val in USER_ACCOUNT_CONTROL.items():
                             if val & int(attribute):
                                 uac.append(key)
-                        print(uac)
                         attribute = "|".join(uac)
+                    if field == "userCertificate":
+                        attribute = bytes.fromhex(attribute[2:-1].replace('\\x', ''))
+                        attribute = attribute.hex()
+                    
                     if isinstance(attribute,str) or isinstance(attribute,int):
                         attributes[field] = attribute
                 else : 
                     attributes[field] = ""
-            except :
+            except Exception as e :
+                print(e,attribute,type(attribute))
                 attributes[field] = ""
     return samAccountName,attributes
 
@@ -92,7 +130,17 @@ def ParseNTDSFile(ntds_file,fields,datatable):
     users = {}
     groups = {}
     machineAccounts = {}
+    
+
     print("[+] Info Extraction Started")
+
+    for record in datatable.records():
+        id = str(record.get(fields["governsID"]))
+        ldap_name = record.get(fields["lDAPDisplayName"])
+        cn_name = record.get(fields["cn"])
+        objectClassSchema["resolve"][id] = (cn_name, ldap_name)
+        objectClassSchema["ldap"][ldap_name] = id
+        objectClassSchema["cn"][cn_name] = id
     
     for record in datatable.records():
         ObjectType = record.get(fields["sAMAccountType"])    

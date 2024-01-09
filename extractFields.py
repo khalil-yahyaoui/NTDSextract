@@ -62,11 +62,8 @@ def extractFieldsFromCSV(ntds_file):
         csv_reader = csv.reader(file)
         for _ in csv_reader:
             tmpfields.append(_)
-
         attribute,header = tmpfields
-    fields = {i:j for i,j in zip(attribute,header) }
-        
+    fields = {i:j for i,j in zip(attribute,header) }    
     print("[+] Getting Fields Completed")
-
     return fields
 
