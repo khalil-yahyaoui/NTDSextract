@@ -72,13 +72,21 @@ def saveToCSV(infos,type,ntds_file):
 
 def formatTime(attribute):
     if isinstance(attribute,int):
-        attribute = int(str(attribute).replace("'",""))
-        attribute = int((attribute / 10**7 ) - 11644473600)
-        attribute =  datetime.fromtimestamp(attribute).__str__()
+        try:
+            attribute_ = int(str(attribute).replace("'",""))
+            attribute_ = int((attribute_ / 10**7 ) - 11644473600)
+            attribute_ =  datetime.fromtimestamp(attribute_).__str__()
+            attribute = attribute_
+        except:
+            attribute = int(str(attribute).replace("'",""))
     elif isinstance(attribute,list):
-        attribute = [int(str(i).replace("'","")) for i in attribute]
-        attribute = [int((i / 10**7 ) - 11644473600) for i in attribute]
-        attribute =  [datetime.fromtimestamp(i).__str__() for i in attribute ]
+        try: 
+            attribute_ = [int(str(i).replace("'","")) for i in attribute]
+            attribute_ = [int((i / 10**7 ) - 11644473600) for i in attribute]
+            attribute_ =  [datetime.fromtimestamp(i).__str__() for i in attribute ]
+            attribute = attribute_
+        except:
+            attribute =  [datetime.fromtimestamp(i).__str__() for i in attribute ]
     return attribute
 
 
@@ -133,14 +141,6 @@ def ParseNTDSFile(ntds_file,fields,datatable):
     
 
     print("[+] Info Extraction Started")
-
-    for record in datatable.records():
-        id = str(record.get(fields["governsID"]))
-        ldap_name = record.get(fields["lDAPDisplayName"])
-        cn_name = record.get(fields["cn"])
-        objectClassSchema["resolve"][id] = (cn_name, ldap_name)
-        objectClassSchema["ldap"][ldap_name] = id
-        objectClassSchema["cn"][cn_name] = id
     
     for record in datatable.records():
         ObjectType = record.get(fields["sAMAccountType"])    
