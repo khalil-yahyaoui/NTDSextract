@@ -6,24 +6,31 @@ def find_complete_record_name(allObjectsNames, partial_record_name):
         if str(partial_record_name) == ''.join(re.findall(r'\d+', record_name)) :
             return record_name
 
-def extractFields(ntds_file):
+def extractFields(ntds_file,fields_=None):
 
     fh = open(ntds_file,"rb")
     db = EseDB(fh)
     fields_file = 'fields_' + ntds_file.split('.')[0] + '.csv'
 
     if os.path.isfile(fields_file):
-        fields = extractFieldsFromCSV(ntds_file)
+        if fields_ is not None:
+            fields = extractFieldsFromCSV(ntds_file,fields_)
+        else: 
+            fields = extractFieldsFromCSV(ntds_file)
     else:
-        fields = extractFieldsFromNTDS(db)
+        if fields_ is not None:
+            fields = extractFieldsFromNTDS(db,fields_)
+        else:
+            fields = extractFieldsFromNTDS(db)
         saveToCSV(ntds_file,fields)
 
 
     return fields
     
-def extractFieldsFromNTDS(db):
+def extractFieldsFromNTDS(db,fields_=None):
 
     print("[-] Field Extraction started")
+
     msysobjects = db.table("MSysObjects")
     datatable = db.table('datatable')
     allObjectsNames = []
@@ -35,10 +42,23 @@ def extractFieldsFromNTDS(db):
         name = record.get("Name")
         if name.startswith("ATT"):
             allObjectsNames.append(name)
-    for record in datatable.records():
-        complete_record_name = find_complete_record_name(allObjectsNames, record.get(attributeID))
-        if complete_record_name:
-            fields[record.get(lDAPDisplayName)] = complete_record_name
+    if fields_ is not None:
+        for record in datatable.records():
+            ldapDisplayName = record.get(lDAPDisplayName)
+            if ldapDisplayName is None:
+                continue
+            if ldapDisplayName.lower() not in fields_:
+                continue
+            complete_record_name = find_complete_record_name(allObjectsNames, record.get(attributeID))
+            if complete_record_name:
+                fields[ldapDisplayName] = complete_record_name
+        
+    else:
+        for record in datatable.records():
+            complete_record_name = find_complete_record_name(allObjectsNames, record.get(attributeID))
+            ldapDisplayName = record.get(lDAPDisplayName)
+            if complete_record_name:
+                fields[ldapDisplayName] = complete_record_name
 
     print("[+] Field Extraction done")
 
@@ -54,7 +74,7 @@ def saveToCSV(ntds_file,fields):
             csv_writer.writerow(fields.values())   
     print("[+] Writing in CSV Done")
 
-def extractFieldsFromCSV(ntds_file):
+def extractFieldsFromCSV(ntds_file,fields_=None):
     print("[-] Getting fields")
     fields_file = 'fields_' + ntds_file.split('.')[0] + '.csv'
     tmpfields = []
@@ -63,7 +83,10 @@ def extractFieldsFromCSV(ntds_file):
         for _ in csv_reader:
             tmpfields.append(_)
         attribute,header = tmpfields
-    fields = {i:j for i,j in zip(attribute,header) }    
+    if fields_ is not None:
+        fields = {i:j for i,j in zip(attribute,header) if i.lower() in fields_}
+    else:
+        fields = {i:j for i,j in zip(attribute,header)}
     print("[+] Getting Fields Completed")
     return fields
 
