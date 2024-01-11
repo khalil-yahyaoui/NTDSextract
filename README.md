@@ -1,6 +1,7 @@
 # NTDSextract
 
 Python3 tool used to parse NTDS.dit file and extract User, groups and machine accounts and dump hashes.
+```
 options:
   -h, --help            show this help message and exit
   -n NTDS_FILE, --ntds_file NTDS_FILE
@@ -15,6 +16,7 @@ options:
                         Select comma seperated fields
   -o OBJECT, --object OBJECT
                         extract object and its attributes
+```
 
 ![Alt text](images/help.png)
 
