@@ -26,7 +26,6 @@ options:
 ```
 python main.py -n ntds.dit -d -o user -O test
 ```
-
 ## Dump Groups
 ```
 python main.py -n ntds.dit -d -o group -O test
@@ -34,6 +33,10 @@ python main.py -n ntds.dit -d -o group -O test
 ## Dump all available objects (users, groups, machine accounts)
 ```
 python main.py -n ntds.dit -d -o all -O test
+```
+# Dump object using specified attributes
+```
+python main.py -n ntds.dit  -O test -d "samaccountname,samaccounttype,pwdlastset"
 ```
 ## Dump Hashes
 ```
