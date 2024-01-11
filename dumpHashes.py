@@ -6,7 +6,7 @@ from Cryptodome.Cipher import DES, ARC4
 from six import PY2
 
 from struct import unpack, pack
-import hashlib
+import hashlib,json
 
 
 class CryptoCommon:
@@ -118,35 +118,45 @@ def decryptPEKKey(PekKey_,bootkey):
 
     return PEKLIST
 
-def dumpHashes(datatable,fields,systemFile):
+def getHash(record,fields,PEKLIST,commonCrypto):
+    samaccountname = record.get(fields["sAMAccountName"])
+    enclmhash = record.get(fields["dBCSPwd"])
+    encnthash = record.get(fields["unicodePwd"])
+    if enclmhash is not None and encnthash is not None:
+        domain = record.get(fields["userPrincipalName"])
+        if domain is None:
+            domain = ""
+        else:
+            domain = domain.split("@")[-1] + "\\"
+        enclmhash = CRYPTED_HASH(enclmhash)
+        encnthash = CRYPTED_HASH(encnthash)
 
-    hashfile = open("hashes.txt","w")
+        sid = SAMR_RPC_SID(record.get(fields["objectSid"]))
+        rid = sid.formatCanonical().split('-')[-1]
+            
+        LMHash = removeRC4(PEKLIST,enclmhash)
+        LMHash = removeDESLayer(LMHash, rid,commonCrypto)
+            
+        NTHash = removeRC4(PEKLIST,encnthash)
+        NTHash = removeDESLayer(NTHash, rid,commonCrypto)
+        hash = domain + samaccountname + ":" + rid + ":" + LMHash.hex()+":" + NTHash.hex() + "\n"
+        return hash
+    else:
+        pass
+
+
+def dumpHashes(datatable,systemFile):
+    print("[+] Hash dump Started")
+    fields = json.loads(open("hashdump.json","r").read())
     PEKkeyenc = extractPEKKey(datatable,fields)
     bootkey = extractBootKey(systemFile)
     PEKLIST = decryptPEKKey(PEKkeyenc,bootkey)
     commonCrypto = CryptoCommon()
 
-    for record in datatable.records():
-        samaccountname = record.get(fields["sAMAccountName"])
-        enclmhash = record.get(fields["dBCSPwd"])
-        encnthash = record.get(fields["unicodePwd"])
-        if enclmhash is not None and encnthash is not None:
-            domain = record.get(fields["userPrincipalName"])
-            if domain is None:
-                domain = ""
-            else:
-                domain = domain.split("@")[-1] + "\\"
-            enclmhash = CRYPTED_HASH(enclmhash)
-            encnthash = CRYPTED_HASH(encnthash)
+    with open("hashes.txt","w") as hashfile:
+        for record in datatable.records():
+            hash = getHash(record,fields,PEKLIST,commonCrypto)
+            if hash is not None:
+                hashfile.write(hash)
 
-            sid = SAMR_RPC_SID(record.get(fields["objectSid"]))
-            rid = sid.formatCanonical().split('-')[-1]
-            
-            LMHash = removeRC4(PEKLIST,enclmhash)
-            LMHash = removeDESLayer(LMHash, rid,commonCrypto)
-            
-            NTHash = removeRC4(PEKLIST,encnthash)
-            NTHash = removeDESLayer(NTHash, rid,commonCrypto)
-            hashfile.write(domain + samaccountname + ":" + rid + ":" + LMHash.hex()+":" + NTHash.hex())
-    hashfile.close()
-        
+    print("[+] Hash dump done")   

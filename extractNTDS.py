@@ -118,7 +118,6 @@ def parseRecord(record,fields):
                 else : 
                     attributes[field] = ""
             except Exception as e :
-                print(e,attribute,type(attribute))
                 attributes[field] = ""
     return samAccountName,attributes
 
@@ -133,7 +132,7 @@ def cleanUpInfos(infos,fields):
             continue
 
 
-def ParseNTDSFile(ntds_file,fields,datatable):    
+def ParseNTDSFile(ntds_file,fields,datatable,objects):    
 
     users = {}
     groups = {}
@@ -144,29 +143,34 @@ def ParseNTDSFile(ntds_file,fields,datatable):
     
     for record in datatable.records():
         ObjectType = record.get(fields["sAMAccountType"])    
-        if ObjectType == 0x30000000:
+        if ObjectType == 0x30000000 and objects in ["all","user"]:
             samaccountname , user = parseRecord(record,fields)
             users[samaccountname] = user
-        elif ObjectType == 0x30000001:
+        elif ObjectType == 0x30000001 and objects in ["all","machineaccount"]:
             samaccountname , machineaccount = parseRecord(record,fields)
             machineAccounts[samaccountname] = machineaccount
-        elif ObjectType == 0x10000000:
+        elif ObjectType == 0x10000000 and objects in ["all","group"]:
             samaccountname , group = parseRecord(record,fields)
             groups[samaccountname] = group
     
     print("[+] Info Extraction Finished")
 
     print("[+] Cleanup Started")
-    
-    cleanUpInfos(users,fields)
-    cleanUpInfos(groups,fields)
-    cleanUpInfos(machineAccounts,fields)
+
+    if users != {}:
+        cleanUpInfos(users,fields)
+    if groups != {}:
+        cleanUpInfos(groups,fields)
+    if machineAccounts != {}:
+        cleanUpInfos(machineAccounts,fields)
     
     print("[+] Cleanup Finished")
-
-    saveToCSV(users,"user",ntds_file)
-    saveToCSV(machineAccounts,"machineaccount",ntds_file)
-    saveToCSV(groups,"group",ntds_file)
+    if users != {}:
+        saveToCSV(users,"user",ntds_file)
+    if machineAccounts != {}:
+        saveToCSV(machineAccounts,"machineaccount",ntds_file)
+    if groups != {}:
+        saveToCSV(groups,"group",ntds_file)
 
 
 def readInfosFromCSV(csv_file_path):

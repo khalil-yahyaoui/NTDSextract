@@ -23,10 +23,10 @@ def extractFields(ntds_file,fields_=None):
         else:
             fields = extractFieldsFromNTDS(db)
         saveToCSV(ntds_file,fields)
-
-
     return fields
-    
+
+
+
 def extractFieldsFromNTDS(db,fields_=None):
 
     print("[-] Field Extraction started")
@@ -42,6 +42,7 @@ def extractFieldsFromNTDS(db,fields_=None):
         name = record.get("Name")
         if name.startswith("ATT"):
             allObjectsNames.append(name)
+
     if fields_ is not None:
         for record in datatable.records():
             ldapDisplayName = record.get(lDAPDisplayName)
