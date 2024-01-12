@@ -1,5 +1,5 @@
 import csv,sys
-from base64 import b64decode as decode
+from base64 import b64encode as encode
 from datetime import datetime
 
 csv.field_size_limit(sys.maxsize)
@@ -99,6 +99,11 @@ def parseRecord(record,fields):
             try : 
                 attribute = record.get(fields[field])
                 if attribute is not None :
+                    if isinstance(attribute,bytes):
+                        attribute = encode(attribute).decode()
+                    elif isinstance(attribute,list):
+                        if isinstance(attribute[0],bytes):
+                            attribute = [encode(i).decode() for i in attribute]
                     if field in (FILETIME_FIELDS + DATETIME_FIELDS):
                         attribute = formatTime(attribute)
                     if isinstance(attribute,list):
@@ -109,10 +114,6 @@ def parseRecord(record,fields):
                             if val & int(attribute):
                                 uac.append(key)
                         attribute = "|".join(uac)
-                    if field == "userCertificate":
-                        attribute = bytes.fromhex(attribute[2:-1].replace('\\x', ''))
-                        attribute = attribute.hex()
-                    
                     if isinstance(attribute,str) or isinstance(attribute,int):
                         attributes[field] = attribute
                 else : 
